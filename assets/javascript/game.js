@@ -19,6 +19,8 @@ database.ref().once("value", function (snap) {
     currentData = snap.val()
     //if there are no rooms in the database
     if (currentData == null) {
+        $("#gameRoom").text("1")
+
         myRoom = database.ref("/room1")
         myRoom.set({
             id: '1',
@@ -43,10 +45,12 @@ database.ref().once("value", function (snap) {
             }
             //if a room isn't full then we set that room as myRoom
             myRoom = database.ref("/room" + thisRoom.id)
+            $("#gameRoom").text(thisRoom.id)
             break
         }
-        //if all already created rooms are full then after the loop myRoom will still be null and means we need to create a new room
+        //if all previously created rooms are full then after the loop myRoom will still be null and means we need to create a new room
         if (myRoom == null) {
+            $("#gameRoom").text(nextRoomNumber)
             myRoom = database.ref("/room" + nextRoomNumber)
             myRoom.set({
                 id: nextRoomNumber,
