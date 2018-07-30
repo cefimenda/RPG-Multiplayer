@@ -12,6 +12,9 @@ var database = firebase.database();
 var currentData;
 var playerRef = database.ref(".info/connected");
 var myRoom;
+var player1Score;
+var player2Score;
+var round;
 
 
 //find a room with 0 or 1 players and set it as myRoom. We only want this to be done once so we use the .once instead of .on to create a one time event listener
@@ -24,9 +27,9 @@ database.ref().once("value", function (snap) {
         myRoom = database.ref("/room1")
         myRoom.set({
             id: '1',
-            gameCount:'0',
-            player1Score:'0',
-            player2Score:'0'
+            gameCount: '0',
+            player1Score: '0',
+            player2Score: '0'
         })
     } else {
         var lastRoomNumber;
@@ -54,9 +57,9 @@ database.ref().once("value", function (snap) {
             myRoom = database.ref("/room" + nextRoomNumber)
             myRoom.set({
                 id: nextRoomNumber,
-                gameCount:'0',
-                player1Score:'0',
-                player2Score:'0'
+                gameCount: '0',
+                player1Score: '0',
+                player2Score: '0'
             })
         }
         //rooms aren't fully deleted so we can track the max amount of simultaneous players ever to play the game by checking how many rooms there are
@@ -68,6 +71,13 @@ database.ref().once("value", function (snap) {
             var con = myRoom.push(true)
             con.onDisconnect().remove();
         }
-    })
+    });
+    myRoom.on('value', function (snap) {
+        player1Score = snap.val().player1Score
+        player2Score = snap.val().player2Score
+        round = snap.val().gameCount
+        $("#scores").text(player1Score+" - "+player2Score)
+        $("#round").text(round)
+    });
 })
 
