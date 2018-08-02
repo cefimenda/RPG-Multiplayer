@@ -210,12 +210,10 @@ function resetGame() {
     game.player2Score = 0
     game.player1Selection = false
     game.player2Selection = false
-
     updateFirebase('selection')
     updateFirebase('score')
     updateFirebase('scoreOpp')
     updateFirebase('gameCount')
-
 }
 function countPlayers(room) {
     var count = room.once("value", function (snap) {
@@ -242,7 +240,6 @@ function setActionListener() {
         //- send user selection to firebase
         updateFirebase('selection')
         removeActionListener()
-        addImage(game["player" + game.myPlayerNo + "Selection"],game.myPlayerNo)
     })
 }
 function removeActionListener() {
@@ -293,7 +290,6 @@ function newRound() {
     changeInfo('Make your selection!')
     game['player' + game.myPlayerNo + 'Selection'] = false
     updateFirebase('selection')
-
     addImage('ROCK',game.myPlayerNo)
     addImage('ROCK',game.oppNo())
 }
@@ -307,17 +303,34 @@ function selectionComplete() {
 
     checkResult()
     //display results
-    displayResult()
-    updateFirebase('score')
-    if (game.myPlayerNo == 1) { //we don't want multiple browsers updating the same info - otherwise our event listener attached to gameRound on firebase will fire multiple times
-        setTimeout(function () {
-            game.round += 1
-            updateFirebase('gameCount')
-        }, 3000)
-    }
+    setTimeout(function(){
+        displayResult()
+        updateFirebase('score')
+        if (game.myPlayerNo == 1) { //we don't want multiple browsers updating the same info - otherwise our event listener attached to gameRound on firebase will fire multiple times
+            setTimeout(function () {
+                game.round += 1
+                updateFirebase('gameCount')
+            }, 3000)
+        }
+        clearInterval(randInterv)
+        $(".middleText").text('VS')
+    },3000)
+    var randInterv = setInterval(function(){
+        var mid = $(".middleText")
+        var text = mid.text()
+        if (text == 'VS'){
+            mid.text('3')
+            text='3'
+        }else{
+            mid.text(Number(text)-1)
+        }
+        if (mid.text()=='0'){
+            mid.text('VS')
+        }
+    },800)
+
 }
 function addImage(selection, playerNo) {
-
     $(".selectionImage"+playerNo).remove()
     var area = $(".player" + playerNo + "Area")
     var img = $("<img>").addClass("mx-auto my-2 selectionImage"+playerNo)
@@ -330,12 +343,8 @@ function addImage(selection, playerNo) {
         img.css({
             'transform': 'rotate(90deg)'
         })
-
     } else {
         img.addClass('flipped')
-
     }
-
     area.append(img)
-
 }
