@@ -110,7 +110,7 @@ database.ref().once("value", function (snap) {
         newRound()
         game.round = Number(snap.val())
         $("#round").text(snap.val())
-        setTimeout(actionButtons,1000)
+        setTimeout(actionButtons,500)
         setActionListener()
     })
 
@@ -144,7 +144,6 @@ database.ref().once("value", function (snap) {
     player2ScoreFirebase.on("value", function (snap) {
         $(".player2Score").text(snap.val())
     })
-
 
 });
 
@@ -279,9 +278,10 @@ function selectionComplete() {
     displayResult()
     updateFirebase('score')
     if(game.myPlayerNo == 1){ //we don't want multiple browsers updating the same info - otherwise our event listener attached to gameRound on firebase will fire multiple times
+    setTimeout(function(){
         game.round+=1
         updateFirebase('gameCount')
-    }
+    },3000)}
 
 
 }
