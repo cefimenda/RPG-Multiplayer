@@ -26,10 +26,8 @@ var game = {
     key: null,
     playerCount: null,
     turnComplete: false,
-    endingRound: false
-
-
-
+    endingRound: false,
+    waitingForPlayer: false
 }
 
 var initialRoomData = {
@@ -103,23 +101,21 @@ database.ref().once("value", function (snap) {
             con.onDisconnect().remove();
         }
     });
-
     //gameCount value change indicates a new round has begun.
     var gameCountFirebase = database.ref(game.roomName + "/gameCount")
     gameCountFirebase.on("value", function (snap) {
         newRound()
         game.round = Number(snap.val())
         $("#round").text(snap.val())
-        setTimeout(actionButtons,500)
+        setTimeout(actionButtons, 500)
         setActionListener()
     })
-
+    //check for changes in player1 selection
     var player1SelectionFirebase = database.ref(game.roomName + "/players/player1/selection")
     player1SelectionFirebase.on("value", function (snap) {
         game.player1Selection = snap.val()
-        console.log('player1 selection from firebase: '+snap.val())
 
-        if (game.player1Selection != false) { changeInfo("player1 made their selection") }
+        if (game.player1Selection != false && !game.waitingForPlayer) { changeInfo("player1 made their selection") }
         if (isSelected()) {
             selectionComplete()
         }
@@ -134,8 +130,7 @@ database.ref().once("value", function (snap) {
     var player2SelectionFirebase = database.ref(game.roomName + "/players/player2/selection")
     player2SelectionFirebase.on("value", function (snap) {
         game.player2Selection = snap.val()
-        console.log('player2 selection from firebase: '+snap.val())
-        if (game.player2Selection != false) { changeInfo("player2 made their selection") }
+        if (game.player2Selection != false && !game.waitingForPlayer) { changeInfo("player2 made their selection") }
         if (isSelected()) {
             selectionComplete()
         }
@@ -145,6 +140,27 @@ database.ref().once("value", function (snap) {
         $(".player2Score").text(snap.val())
     })
 
+    //on every action taken we want to check if both players are still in the room and act if this isn't the case
+    myRoom.on("value", function (snap) {
+        countPlayers(myRoom).then(function () {
+            if (game.playerCount < 2) {
+                resetGame()
+                changeInfo('Waiting for another player to join your room!')
+                removeActionListener()
+                $(".buttonsRow").remove()
+                setTimeout(function () {
+                    $(".buttonsRow").remove()
+                }, 600)
+                game.waitingForPlayer = true
+            } else if (game.playerCount >= 2 && game.waitingForPlayer) {
+                resetGame()
+                game.waitingForPlayer = false
+                newRound()
+                setTimeout(actionButtons, 500)
+                setActionListener()
+            }
+        })
+    })
 });
 
 function actionButtons() {
@@ -178,14 +194,17 @@ function updateScreen() {
     $("#scores").text(game.player1Score + " - " + game.player2Score)
     $("#round").text(game.round)
 }
-function updateGame() {
-    myRoom.once('value', function (snap) {
-        game.turnComplete = snap.val().turnComplete
-        game.player1Score = snap.val().players.player1.score
-        game.player2Score = snap.val().players.player2.score
-        game.player1Selection = snap.val().players.player1.selection
-        game.player2Selection = snap.val().players.player2.selection
-    });
+function resetGame() {
+    game.round = 0
+    game.player1Score = 0
+    game.player2Score = 0
+    game.player1Selection = false
+    game.player2Selection = false
+
+    updateFirebase('selection')
+    updateFirebase('score')
+    updateFirebase('scoreOpp')
+    updateFirebase('gameCount')
 
 }
 function countPlayers(room) {
@@ -241,7 +260,6 @@ function displayResult() {
 function updateFirebase(target) {
     var updates = {}
     if (target == "selection") {
-        console.log('my selection is:'+game["player" + game.myPlayerNo + "Selection"])
         updates["/players/player" + game.myPlayerNo + "/selection"] = game["player" + game.myPlayerNo + "Selection"]
     }
     if (target == "score") {
@@ -250,19 +268,21 @@ function updateFirebase(target) {
     if (target == "gameCount") {
         updates['gameCount'] = game.round
     }
-    myRoom.update(updates)
-}
-function updateFirebaseGameCount() {
-    var updates = {
-        gameCount: game.round,
+    if (target == "scoreOpp") {
+        if (game.myPlayerNo == 1) {
+            var oppNo = 2
+        } else {
+            var oppNo = 1
+        }
+        updates["/players/player" + oppNo + "/score"] = game["player" + oppNo + "Score"]
     }
     myRoom.update(updates)
-
 }
+
 function newRound() {
     console.log("____________________NEW ROUND _________________________")
     changeInfo('Make your selection!')
-    game['player'+game.myPlayerNo+'Selection']=false
+    game['player' + game.myPlayerNo + 'Selection'] = false
     updateFirebase('selection')
 }
 function isSelected() {
@@ -277,114 +297,14 @@ function selectionComplete() {
     //display results
     displayResult()
     updateFirebase('score')
-    if(game.myPlayerNo == 1){ //we don't want multiple browsers updating the same info - otherwise our event listener attached to gameRound on firebase will fire multiple times
-    setTimeout(function(){
-        game.round+=1
-        updateFirebase('gameCount')
-    },3000)}
+    if (game.myPlayerNo == 1) { //we don't want multiple browsers updating the same info - otherwise our event listener attached to gameRound on firebase will fire multiple times
+        setTimeout(function () {
+            game.round += 1
+            updateFirebase('gameCount')
+        }, 3000)
+    }
 
 
 }
 
 
-/*
-  var gameCountFirebase = database.ref(game.roomName + "/gameCount")
-    gameCountFirebase.on("value", function (snap) {
-        console.log('new Round')
-        $("#round").text(snap.val())
-        newRound()
-        //Each Round:
-        // - update game data from firebase
-        updateGame()
-        //- display game data
-        setTimeout(updateScreen, 200)
-        //- get user selection
-        actionButtons()
-        $(".player" + game.myPlayerNo + "Area").on('click', ".selection", function () {
-            game["player" + game.myPlayerNo + "Selection"] = $(this).text()
-            $(".buttonsRow").remove()
-            //- send user selection to firebase
-            updateFirebase('selection')
-        })
-    })
-    //check for changes in player1 selection
-    var player1SelectionFirebase = database.ref(game.roomName + "/players/player1/selection")
-    player1SelectionFirebase.on("value", function (snap) {
-        console.log("firebase player1 selection changed")
-        updateGame()
-        //must set timeout to make sure that game is updated before moving forward - bc firebase functions are async
-        setTimeout(function () {
-            if (game.player1Selection != false) { changeInfo("player1 made their selection") }
-            if (isSelected()) {
-                selectionComplete()
-            }
-        }, 500)
-
-    })
-
-    //check for changes in player2 selection
-    var player2SelectionFirebase = database.ref(game.roomName + "/players/player2/selection")
-    player2SelectionFirebase.on("value", function (snap) {
-        console.log("firebase player2 selection changed")
-        updateGame()
-        //must set timeout to make sure that game is updated before moving forward - bc firebase functions are async
-        setTimeout(function () {
-            if (game.player2Selection != false) { changeInfo("player2 made their selection") }
-            if (isSelected()) {
-                selectionComplete()
-            }
-        }, 500)
-
-    })
-*/
-
-//__________________________________________________
-
-
-/*
-Before Round:
-    -check that there are 2 players in the room. If yes, then start round.
-
-*/
-
-
-/*
- countPlayers(myRoom).then(function () {
-        if (game.playerCount == 2 && game["player" + game.myPlayerNo + "Selection"] === false) {
-            changeInfo("All players are in the room! Make your selection")
-            actionButtons()
-            setActionListener()
-        } else if (game.playerCount == 1) {
-            changeInfo("You are the only one here, waiting for another player")
-            $(".buttonsRow").remove()
-        }
-    })
-    if (game.player1Selection != false && game.player2Selection != false && game.endingRound == false) {
-        changeInfo("Selections Made!")
-        removeActionListener()
-        game.endingRound = true
-        checkResult()
-        if (game.winner == game.myPlayerNo) {
-            changeInfo("YOU WON!")
-            game["player" + game.myPlayerNo + "Score"] += 1
-            setTimeout(updateFirebase, 3000)
-        } else if (game.winner === "tied") {
-            changeInfo("IT'S A TIE")
-        } else {
-            changeInfo("You Lost :(")
-            if (game.myPLayerNo == 1) {
-                game["player" + 2 + "Score"] += 1
-            } else {
-                game["player" + 1 + "Score"] += 1
-            }
-        }
-        console.log(game.player1Score)
-        console.log(game.player2Score)
-        game.round += 1
-        game.player1Selection = false
-        game.player2Selection = false
-        setTimeout(updateFirebase, 3000)
-        game.endingRound = false
-    }
-    console.log(game.myPlayerNo)
-*/
