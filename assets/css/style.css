@@ -1,0 +1,17 @@
+.flipped{
+    transform: scaleY(-1) rotate(-90deg)!important
+}
+.player1Area, .player2Area{
+    height: 100%
+}
+.middleText{
+    display:block;
+    margin-top:100%;
+    font-size:40px
+}
+.gameArea{
+    height: 100%
+}
+.container,body{
+    height: 350px
+}

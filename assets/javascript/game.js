@@ -27,7 +27,15 @@ var game = {
     playerCount: null,
     turnComplete: false,
     endingRound: false,
-    waitingForPlayer: false
+    waitingForPlayer: false,
+    oppNo:function(){
+        if (game.myPlayerNo == 1) {
+            var oppNo = 2
+        } else {
+            var oppNo = 1
+        }
+        return oppNo
+    }
 }
 
 var initialRoomData = {
@@ -115,7 +123,7 @@ database.ref().once("value", function (snap) {
     player1SelectionFirebase.on("value", function (snap) {
         game.player1Selection = snap.val()
 
-        if (game.player1Selection != false && !game.waitingForPlayer) { changeInfo("player1 made their selection") }
+        if (game.player1Selection != false && !game.waitingForPlayer) { changeInfo("player1 made their selection, waiting for player2") }
         if (isSelected()) {
             selectionComplete()
         }
@@ -130,7 +138,7 @@ database.ref().once("value", function (snap) {
     var player2SelectionFirebase = database.ref(game.roomName + "/players/player2/selection")
     player2SelectionFirebase.on("value", function (snap) {
         game.player2Selection = snap.val()
-        if (game.player2Selection != false && !game.waitingForPlayer) { changeInfo("player2 made their selection") }
+        if (game.player2Selection != false && !game.waitingForPlayer) { changeInfo("player2 made their selection, waiting for player1") }
         if (isSelected()) {
             selectionComplete()
         }
@@ -162,28 +170,30 @@ database.ref().once("value", function (snap) {
         })
     })
 });
+function createButton(selection) {
+    var button = $("<img>").addClass("img-thumbnail selection " + selection)
+    button.css({
+        width: '50px',
+        height: '50px'
+    })
+    button.attr('src', 'assets/images/' + selection.toLowerCase() + '.png')
+    button.attr('data', selection)
+    return button
+}
 
 function actionButtons() {
     $(".buttonsRow").remove()
-    var row = $("<div>").addClass("row buttonsRow")
-    var col1 = $("<div>").addClass("col")
+    var row = $("<div>").addClass("row mx-0 buttonsRow")
+    var col1 = $("<div>").addClass("col my-2 p-0 mx-0")
     row.append(col1)
-    var col2 = $("<div>").addClass("col")
+    var col2 = $("<div>").addClass("col my-2 p-0 mx-0")
     row.append(col2)
-    var col3 = $("<div>").addClass("col")
+    var col3 = $("<div>").addClass("col my-2 p-0 mx-0")
     row.append(col3)
 
-    var rockButton = $("<button>").addClass("btn selection")
-    rockButton.text("ROCK")
-    col1.append(rockButton)
-
-    var paperButton = $("<button>").addClass("btn selection")
-    paperButton.text("PAPER")
-    col2.append(paperButton)
-
-    var scissorsButton = $("<button>").addClass("btn selection")
-    scissorsButton.text("SCISSORS")
-    col3.append(scissorsButton)
+    col1.append(createButton('ROCK'))
+    col2.append(createButton('PAPER'))
+    col3.append(createButton('SCISSORS'))
 
     $(".player" + game.myPlayerNo + "Area").append(row)
 }
@@ -227,11 +237,12 @@ function countPlayers(room) {
 }
 function setActionListener() {
     $(".player" + game.myPlayerNo + "Area").on('click', ".selection", function () {
-        game["player" + game.myPlayerNo + "Selection"] = $(this).text()
+        game["player" + game.myPlayerNo + "Selection"] = $(this).attr('data')
         $(".buttonsRow").remove()
         //- send user selection to firebase
         updateFirebase('selection')
         removeActionListener()
+        addImage(game["player" + game.myPlayerNo + "Selection"],game.myPlayerNo)
     })
 }
 function removeActionListener() {
@@ -248,6 +259,8 @@ function checkResult() {
     }
 }
 function displayResult() {
+    addImage(game['player'+game.myPlayerNo+'Selection'],game.myPlayerNo)
+    addImage(game['player'+game.oppNo()+'Selection'],game.oppNo())
     if (game.winner == game.myPlayerNo) {
         changeInfo("YOU WON!")
         game["player" + game.myPlayerNo + "Score"] += 1
@@ -269,11 +282,7 @@ function updateFirebase(target) {
         updates['gameCount'] = game.round
     }
     if (target == "scoreOpp") {
-        if (game.myPlayerNo == 1) {
-            var oppNo = 2
-        } else {
-            var oppNo = 1
-        }
+        var oppNo = game.oppNo()
         updates["/players/player" + oppNo + "/score"] = game["player" + oppNo + "Score"]
     }
     myRoom.update(updates)
@@ -284,6 +293,9 @@ function newRound() {
     changeInfo('Make your selection!')
     game['player' + game.myPlayerNo + 'Selection'] = false
     updateFirebase('selection')
+
+    addImage('ROCK',game.myPlayerNo)
+    addImage('ROCK',game.oppNo())
 }
 function isSelected() {
     return (game.player1Selection != false && game.player2Selection != false)
@@ -303,8 +315,27 @@ function selectionComplete() {
             updateFirebase('gameCount')
         }, 3000)
     }
+}
+function addImage(selection, playerNo) {
 
+    $(".selectionImage"+playerNo).remove()
+    var area = $(".player" + playerNo + "Area")
+    var img = $("<img>").addClass("mx-auto my-2 selectionImage"+playerNo)
+    img.css({
+        height: '200px',
+        width: '200px'
+    })
+    img.attr('src', 'assets/images/' + selection.toLowerCase() + '.png')
+    if (playerNo == 1) {
+        img.css({
+            'transform': 'rotate(90deg)'
+        })
+
+    } else {
+        img.addClass('flipped')
+
+    }
+
+    area.append(img)
 
 }
-
-

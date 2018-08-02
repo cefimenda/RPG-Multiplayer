@@ -24,35 +24,46 @@
 
 <body>
     <div class="container">
-        <h1 id="title" class="text-center m-5">Rock Paper Scissors!</h1>
-        <h4 class ="text-right mb-3">Game Room:  <span id="gameRoom"></span></h4>
+        <h1 id="title" class="text-center mt-3">Rock Paper Scissors!</h1>
         <div class="row">
-            <div class="col-2 card text-center">
-                <h1>Round: <span id="round"></span></h1>
+            <div class="col-6">
+                <h3 class="text-left">Round:
+                    <span id="round"></span>
+                </h3>
             </div>
-            <div class="col-10 card text-center">
-                <h1 id="scores"><span class="player1Score"></span> - <span class = "player2Score"></span></h1>
+            <div class="col-6">
+                <h4 class="text-right mb-3">Game Room:
+                    <span id="gameRoom"></span>
+                </h4>
+            </div>
+        </div>
+        <div class="row shadow-lg p-3">
+            <div class="col-12 text-center">
+                <h1 id="scores">
+                    <span class="player1Score"></span> -
+                    <span class="player2Score"></span>
+                </h1>
             </div>
         </div>
         <div class="row">
-            <div class="col-12 my-3 infoArea text-center">
+            <div class="col-12 my-3 badge-info infoArea text-center">
                 Waiting for another player
             </div>
         </div>
-        <div class="row text-center mt-3 gameArea">
+        <div class="row text-center mt-3 gameArea ">
             <div class="col-5">
-                <div class="card player1Area">
-                    PLAYER 1
+                <div class="card rounded shadow-lg player1Area">
+                    <h3 class="badge badge-primary">PLAYER 1</h3>
                 </div>
             </div>
             <div class="col-2">
-                <div class="card middle">
-                    VS
+                <div class="middle">
+                    <span class="middleText">VS</span>
                 </div>
             </div>
             <div class="col-5">
-                <div class="card player2Area">
-                    PLAYER 2
+                <div class="card shadow-lg player2Area">
+                    <h3 class="badge badge-danger">PLAYER 2</h3>
                 </div>
             </div>
         </div>
