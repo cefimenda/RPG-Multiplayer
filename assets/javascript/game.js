@@ -349,7 +349,6 @@ function updateFirebase(target) {
     myRoom.update(updates)
 }
 function newRound() {
-    console.log("____________________NEW ROUND _________________________")
     changeInfo('Make your selection!')
     game['player' + game.myPlayerNo + 'Selection'] = false
     updateFirebase('selection')
