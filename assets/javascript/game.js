@@ -46,130 +46,163 @@ var initialRoomData = {
         player1: {
             id: 1,
             score: 0,
-            selection: false
+            selection: false,
+            name:"PLAYER 1"
         },
         player2: {
             id: 2,
             score: 0,
-            selection: false
+            selection: false,
+            name:"PLAYER 2"
         }
     }
 }
 
-//find a room with 0 or 1 players and set it as myRoom. We only want this to be done once so we use the .once instead of .on to create a one time event listener
-database.ref().once("value", function (snap) {
-    currentData = snap.val()
-    //if there are no rooms in the database
-    if (currentData == null) {
-        game.myPlayerNo = 1
-        $("#gameRoom").text("1")
-        myRoom = database.ref("/room1")
-        game.roomName = 'room1'
-        myRoom.set(initialRoomData)
-    } else {
-        for (var i in snap.val()) {
-            //count each room and either join a room or create a new room
-            var thisRoom = snap.val()[i]
-            nextRoomNumber = Number(thisRoom.id) + Number(1)
-            for (var n in thisRoom.players) {
-                var counter = 0
-                for (var j in thisRoom.players[n]) {
-                    counter++
+$(function(){
+    $(".startGame").on('click',function(){
+        event.preventDefault()
+        game.name = $('.username').val()
+        $(".gameArea").removeClass("d-none")
+        $('.usernameRow').addClass('d-none')
+        database.ref().once("value", function (snap) {
+            currentData = snap.val()
+            //if there are no rooms in the database
+            if (currentData == null) {
+                game.myPlayerNo = 1
+                $("#gameRoom").text("1")
+                myRoom = database.ref("/room1")
+                game.roomName = 'room1'
+                myRoom.set(initialRoomData)
+            } else {
+                for (var i in snap.val()) {
+                    //count each room and either join a room or create a new room
+                    var thisRoom = snap.val()[i]
+                    nextRoomNumber = Number(thisRoom.id) + Number(1)
+                    for (var n in thisRoom.players) {
+                        var counter = 0
+                        for (var j in thisRoom.players[n]) {
+                            counter++
+                        }
+                        if (counter > 4) {
+                            continue
+                        } else {
+                            game.myPlayerNo = thisRoom.players[n].id
+                            myRoom = database.ref("/room" + thisRoom.id)
+                            $("#gameRoom").text(thisRoom.id)
+                            game.roomName = "room" + thisRoom.id
+                            break
+                        }
+                    }
                 }
-                if (counter > 3) {
-                    continue
-                } else {
-                    game.myPlayerNo = thisRoom.players[n].id
-                    myRoom = database.ref("/room" + thisRoom.id)
-                    $("#gameRoom").text(thisRoom.id)
-                    game.roomName = "room" + thisRoom.id
-                    break
+                //if all previously created rooms are full then after the loop myRoom will still be null and means we need to create a new room
+                if (myRoom == null) {
+                    $("#gameRoom").text(nextRoomNumber)
+                    game.roomName = "room" + nextRoomNumber
+                    game.myPlayerNo = 1
+                    myRoom = database.ref("/room" + nextRoomNumber)
+                    initialRoomData.id = nextRoomNumber
+                    myRoom.set(initialRoomData)
                 }
+                //rooms aren't fully deleted so we can track the max amount of simultaneous players ever to play the game by checking how many rooms there are
             }
-        }
-        //if all previously created rooms are full then after the loop myRoom will still be null and means we need to create a new room
-        if (myRoom == null) {
-            $("#gameRoom").text(nextRoomNumber)
-            game.roomName = "room" + nextRoomNumber
-            game.myPlayerNo = 1
-            myRoom = database.ref("/room" + nextRoomNumber)
-            initialRoomData.id = nextRoomNumber
-            myRoom.set(initialRoomData)
-        }
-        //rooms aren't fully deleted so we can track the max amount of simultaneous players ever to play the game by checking how many rooms there are
-    }
-}).then(function () {
-    //once myRoom is set we can add the player to this selected room
-    playerRef.on("value", function (snap) {
-        if (snap.val()) {
-            var myPlayerRef = database.ref("/" + game.roomName + "/players/player" + game.myPlayerNo)
-            var con = myPlayerRef.push(true)
-            var key = con.key
-            game.key = key
-            con.onDisconnect().remove();
-        }
-    });
-    //gameCount value change indicates a new round has begun.
-    var gameCountFirebase = database.ref(game.roomName + "/gameCount")
-    gameCountFirebase.on("value", function (snap) {
-        newRound()
-        game.round = Number(snap.val())
-        $("#round").text(snap.val())
-        setTimeout(actionButtons, 500)
-        setActionListener()
-    })
-    //check for changes in player1 selection
-    var player1SelectionFirebase = database.ref(game.roomName + "/players/player1/selection")
-    player1SelectionFirebase.on("value", function (snap) {
-        game.player1Selection = snap.val()
-
-        if (game.player1Selection != false && !game.waitingForPlayer) { changeInfo("player1 made their selection, waiting for player2") }
-        if (isSelected()) {
-            selectionComplete()
-        }
-    })
-    var player1ScoreFirebase = database.ref(game.roomName + "/players/player1/score")
-    player1ScoreFirebase.on("value", function (snap) {
-        $(".player1Score").text(snap.val())
-
-    })
-
-    //check for changes in player2 selection
-    var player2SelectionFirebase = database.ref(game.roomName + "/players/player2/selection")
-    player2SelectionFirebase.on("value", function (snap) {
-        game.player2Selection = snap.val()
-        if (game.player2Selection != false && !game.waitingForPlayer) { changeInfo("player2 made their selection, waiting for player1") }
-        if (isSelected()) {
-            selectionComplete()
-        }
-    })
-    var player2ScoreFirebase = database.ref(game.roomName + "/players/player2/score")
-    player2ScoreFirebase.on("value", function (snap) {
-        $(".player2Score").text(snap.val())
-    })
-
-    //on every action taken we want to check if both players are still in the room and act if this isn't the case
-    myRoom.on("value", function (snap) {
-        countPlayers(myRoom).then(function () {
-            if (game.playerCount < 2) {
-                resetGame()
-                changeInfo('Waiting for another player to join your room!')
-                removeActionListener()
-                $(".buttonsRow").remove()
-                setTimeout(function () {
-                    $(".buttonsRow").remove()
-                }, 600)
-                game.waitingForPlayer = true
-            } else if (game.playerCount >= 2 && game.waitingForPlayer) {
-                resetGame()
-                game.waitingForPlayer = false
+        }).then(function () {
+            //once myRoom is set we can add the player to this selected room
+            playerRef.on("value", function (snap) {
+                if (snap.val()) {
+                    var myPlayerRef = database.ref("/" + game.roomName + "/players/player" + game.myPlayerNo)
+                    var con = myPlayerRef.push(true)
+                    var key = con.key
+                    game.key = key
+                    con.onDisconnect().remove();
+                }
+            });
+            //gameCount value change indicates a new round has begun.
+            var gameCountFirebase = database.ref(game.roomName + "/gameCount")
+            gameCountFirebase.on("value", function (snap) {
                 newRound()
+                game.round = Number(snap.val())
+                $("#round").text(snap.val())
                 setTimeout(actionButtons, 500)
                 setActionListener()
-            }
-        })
+            })
+            //check for changes in player1 selection
+            var player1SelectionFirebase = database.ref(game.roomName + "/players/player1/selection")
+            player1SelectionFirebase.on("value", function (snap) {
+                game.player1Selection = snap.val()
+        
+                if (game.player1Selection != false && !game.waitingForPlayer) { changeInfo(game.player1Name+" made their selection, waiting for "+game.player2Name) }
+                if (isSelected()) {
+                    selectionComplete()
+                }
+            })
+            var player1ScoreFirebase = database.ref(game.roomName + "/players/player1/score")
+            player1ScoreFirebase.on("value", function (snap) {
+                $(".player1Score").text(snap.val())
+        
+            })
+        
+            //check for changes in player2 selection
+            var player2SelectionFirebase = database.ref(game.roomName + "/players/player2/selection")
+            player2SelectionFirebase.on("value", function (snap) {
+                game.player2Selection = snap.val()
+                if (game.player2Selection != false && !game.waitingForPlayer) { changeInfo(game.player2Name+" made their selection, waiting for "+game.player1Name) }
+                if (isSelected()) {
+                    selectionComplete()
+                }
+            })
+            var player2ScoreFirebase = database.ref(game.roomName + "/players/player2/score")
+            player2ScoreFirebase.on("value", function (snap) {
+                $(".player2Score").text(snap.val())
+            })
+
+            //Naming Players
+            var player1NameFirebase = database.ref(game.roomName+"/players/player1/name")
+            player1NameFirebase.on("value",function(snap){
+                game.player1Name = snap.val()
+                $(".player1Name").text(snap.val())
+            })
+            var player2NameFirebase = database.ref(game.roomName+"/players/player2/name")
+            player2NameFirebase.on("value",function(snap){
+                game.player2Name = snap.val()
+                $(".player2Name").text(snap.val())
+            })
+            var updates = {}
+            updates["/players/player"+game.myPlayerNo+"/name"]=game.name
+            myRoom.update(updates)
+
+            //handling disconnects
+            //on every action taken we want to check if both players are still in the room and act if this isn't the case
+            myRoom.on("value", function (snap) {
+                countPlayers(myRoom).then(function () {
+                    if (game.playerCount < 2) {
+                        resetGame()
+                        changeInfo('Waiting for another player to join your room...')
+                        $(".selectionImage"+game.oppNo()).remove()
+                        removeActionListener()
+                        $(".buttonsRow").remove()
+                        setTimeout(function () {
+                            $(".buttonsRow").remove()
+                        }, 600)
+                        var updates = {}
+                        updates["/players/player"+game.oppNo()+"/name"]="PLAYER"+game.oppNo()
+                        myRoom.update(updates)
+                        game.waitingForPlayer = true
+                    } else if (game.playerCount >= 2 && game.waitingForPlayer) {
+                        resetGame()
+                        game.waitingForPlayer = false
+                        newRound()
+                        setTimeout(actionButtons, 500)
+                        setActionListener()
+                    }
+                })
+            })
+
+            
+        });
     })
-});
+})
+//find a room with 0 or 1 players and set it as myRoom. We only want this to be done once so we use the .once instead of .on to create a one time event listener
+
 function createButton(selection) {
     var button = $("<img>").addClass("img-thumbnail selection " + selection)
     button.css({
@@ -224,7 +257,7 @@ function countPlayers(room) {
             for (var n in playerInfo) {
                 infoCounter += 1
             }
-            if (infoCounter > 3) {
+            if (infoCounter > 4) {
                 counter++
             }
         }
@@ -264,7 +297,7 @@ function displayResult() {
     } else if (game.winner == "tied") {
         changeInfo("IT'S A TIE")
     } else {
-        changeInfo("You Lost :( ")
+        changeInfo("You Lost")
     }
 }
 function updateFirebase(target) {
