@@ -16,7 +16,7 @@ var nextRoomNumber = null
 
 var game = {
     roomName: null,
-    round: 0,
+    round: 1,
     player1Score: 0,
     player2Score: 0,
     myPlayerNo: 0,
@@ -40,7 +40,7 @@ var game = {
 
 var initialRoomData = {
     id: 1,
-    gameCount: '0',
+    gameCount: 1,
     turnComplete: false,
     chat:{
         player1:{
@@ -264,12 +264,8 @@ function actionButtons() {
 function changeInfo(targetText) {
     $(".infoArea").text(targetText)
 }
-function updateScreen() {
-    $("#scores").text(game.player1Score + " - " + game.player2Score)
-    $("#round").text(game.round)
-}
 function resetGame() {
-    game.round = 0
+    game.round = 1
     game.player1Score = 0
     game.player2Score = 0
     game.player1Selection = false
