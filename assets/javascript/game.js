@@ -71,6 +71,7 @@ $(function () {
         event.preventDefault()
         game.name = $('.username').val()
         $(".gameArea").removeClass("d-none")
+        $(".chatRow").removeClass("d-none")
         $('.usernameRow').addClass('d-none')
         database.ref().once("value", function (snap) {
             currentData = snap.val()
@@ -117,6 +118,8 @@ $(function () {
             //once myRoom is set we can add the player to this selected room
             playerRef.on("value", function (snap) {
                 if (snap.val()) {
+                    var updates = {chat:null}
+                    myRoom.update(updates)
                     var myPlayerRef = database.ref("/" + game.roomName + "/players/player" + game.myPlayerNo)
                     var con = myPlayerRef.push(true)
                     var key = con.key
@@ -236,7 +239,6 @@ function createButton(selection) {
     button.attr('data', selection)
     return button
 }
-
 function actionButtons() {
     $(".buttonsRow").remove()
     var row = $("<div>").addClass("row mx-0 buttonsRow")
@@ -408,6 +410,7 @@ function createMyMessage(text) {
     par.text(text)
     //get position of previous message if any
     var prevTop = $(".chatArea").children().last().css("top")
+    var prevHeight = $(".chatArea").children().last().css("height")
     //add 30 to the previous position for the new messages position
     if (prevTop == undefined) {
         par.css({
@@ -415,7 +418,7 @@ function createMyMessage(text) {
         })
     } else {
         par.css({
-            'top': (Number(prevTop.split("px")[0]) + Number(30)) + "px"
+            'top': (Number(prevTop.split("px")[0])) + (Number(prevHeight.split("px")[0]))+Number(5) + "px"
         })
     }
     $(".chatArea").append(par)
@@ -425,6 +428,7 @@ function createOppMessage(text) {
     par.text(text)
     //get position of previous message if any
     var prevTop = $(".chatArea").children().last().css("top")
+    var prevHeight = $(".chatArea").children().last().css("height")
     //add 30 to the previous position for the new messages position
     if (prevTop == undefined) {
         par.css({
@@ -432,7 +436,7 @@ function createOppMessage(text) {
         })
     } else {
         par.css({
-            'top': (Number(prevTop.split("px")[0]) + Number(30)) + "px"
+            'top': (Number(prevTop.split("px")[0])) + (Number(prevHeight.split("px")[0]))+Number(5) + "px"
         })
     }
     $(".chatArea").append(par)

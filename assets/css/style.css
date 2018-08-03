@@ -18,11 +18,12 @@
 .chat{
     height: 350px;
     width:100%;
-    overflow: scroll
+    overflow-y: scroll;
+    overflow-x:hidden;
 }
 .message{
     width:fit-content;
-
+    max-width: 80%;
 }
 .newMessage{
     position:relative
