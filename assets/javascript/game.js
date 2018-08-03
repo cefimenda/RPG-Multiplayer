@@ -42,12 +42,12 @@ var initialRoomData = {
     id: 1,
     gameCount: 1,
     turnComplete: false,
-    chat:{
-        player1:{
-            message:null
+    chat: {
+        player1: {
+            message: null
         },
-        player2:{
-            message:null
+        player2: {
+            message: null
         }
     },
     players: {
@@ -118,7 +118,7 @@ $(function () {
             //once myRoom is set we can add the player to this selected room
             playerRef.on("value", function (snap) {
                 if (snap.val()) {
-                    var updates = {chat:null}
+                    var updates = { chat: null }
                     myRoom.update(updates)
                     var myPlayerRef = database.ref("/" + game.roomName + "/players/player" + game.myPlayerNo)
                     var con = myPlayerRef.push(true)
@@ -182,13 +182,13 @@ $(function () {
             myRoom.update(updates)
 
             //chatRoom
-            var oppMessage = database.ref(game.roomName+"/chat/player"+game.oppNo()+"/message")
-            oppMessage.on("value",function(snap){
-                if(snap.val() == null){return}
+            var oppMessage = database.ref(game.roomName + "/chat/player" + game.oppNo() + "/message")
+            oppMessage.on("value", function (snap) {
+                if (snap.val() == null) { return }
                 createOppMessage(snap.val())
-                $(".chat")[0].scrollTop=$(".chat")[0].scrollHeight
+                $(".chat")[0].scrollTop = $(".chat")[0].scrollHeight
             });
-            
+
             //handling disconnects
             //on every action taken we want to check if both players are still in the room and act if this isn't the case
             myRoom.on("value", function (snap) {
@@ -220,15 +220,15 @@ $(function () {
     })
     $(".sendButton").on("click", function () {
         var message = $(".chatInput").val()
-        if (message == ""){return}
+        if (message == "") { return }
         createMyMessage(message)
         $(".chatInput").val("")
-        var myMessageRef = database.ref(game.roomName+"/chat/player"+game.myPlayerNo)
-        myMessageRef.update({'message':message})
-        $(".chat")[0].scrollTop=$(".chat")[0].scrollHeight
+        var myMessageRef = database.ref(game.roomName + "/chat/player" + game.myPlayerNo)
+        myMessageRef.update({ 'message': message })
+        $(".chat")[0].scrollTop = $(".chat")[0].scrollHeight
     })
-    $(".chatInput").keyup(function(event){
-        if(event.keyCode==13){
+    $(".chatInput").keyup(function (event) {
+        if (event.keyCode == 13) {
             $(".sendButton").click()
         }
     })
@@ -372,18 +372,30 @@ function selectionComplete() {
         }
         clearInterval(randInterv)
         $(".middleText").text('VS')
+        $(".middleText").fadeIn()
     }, 3000)
     var randInterv = setInterval(function () {
         var mid = $(".middleText")
         var text = mid.text()
         if (text == 'VS') {
-            mid.text('3')
-            text = '3'
-        } else {
-            mid.text(Number(text) - 1)
+            mid.text('ROCK')
+            text = 'ROCK'
+            mid.fadeOut()
         }
-        if (mid.text() == '0') {
+        else if (text == 'ROCK') {
+            mid.fadeIn('fast')
+            mid.text('PAPER')
+            text = 'PAPER'
+            mid.fadeOut('fast')
+        } else if (text == 'PAPER') {
+            mid.fadeIn('fast')
+            mid.text('SCISSORS')
+            text = 'SCISSORS'
+            mid.fadeOut('fast')
+        } else if (text == 'SCISSORS') {
             mid.text('VS')
+            text = 'VS'
+            mid.show()
         }
     }, 800)
 
@@ -399,10 +411,11 @@ function addImage(selection, playerNo) {
     img.attr('src', 'assets/images/' + selection.toLowerCase() + '.png')
     if (playerNo == 1) {
         img.css({
-            'transform': 'rotate(90deg)'
+            'transform': 'rotate(90deg)',
         })
     } else {
         img.addClass('flipped')
+
     }
     area.append(img)
 }
@@ -419,7 +432,7 @@ function createMyMessage(text) {
         })
     } else {
         par.css({
-            'top': (Number(prevTop.split("px")[0])) + (Number(prevHeight.split("px")[0]))+Number(5) + "px"
+            'top': (Number(prevTop.split("px")[0])) + (Number(prevHeight.split("px")[0])) + Number(5) + "px"
         })
     }
     $(".chatArea").append(par)
@@ -437,7 +450,7 @@ function createOppMessage(text) {
         })
     } else {
         par.css({
-            'top': (Number(prevTop.split("px")[0])) + (Number(prevHeight.split("px")[0]))+Number(5) + "px"
+            'top': (Number(prevTop.split("px")[0])) + (Number(prevHeight.split("px")[0])) + Number(5) + "px"
         })
     }
     $(".chatArea").append(par)

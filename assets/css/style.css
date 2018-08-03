@@ -7,7 +7,7 @@
 .middleText{
     display:block;
     margin-top:100%;
-    font-size:40px
+    font-size:30px
 }
 .gameArea{
     height: 100%
@@ -16,7 +16,7 @@
     height: 350px
 }
 .chat{
-    height: 350px;
+    height: 300px;
     width:100%;
     overflow-y: scroll;
     overflow-x:hidden;
@@ -37,4 +37,15 @@
     position:absolute;
     left:0px;
     margin-right:20%;
+}
+.chatInfo{
+    max-height: 10%;
+}
+.imageDiv{
+    height: fit-content;
+    position: relative;
+    width: fit-content;
+    margin-left: auto;
+    display: block;
+    margin-right: auto;
 }
