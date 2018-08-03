@@ -99,7 +99,7 @@ $(function () {
                             myRoom = database.ref("/room" + thisRoom.id)
                             $("#gameRoom").text(thisRoom.id)
                             game.roomName = "room" + thisRoom.id
-                            break
+                            return
                         }
                     }
                 }
