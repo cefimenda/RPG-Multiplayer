@@ -73,6 +73,7 @@ $(function () {
         $(".gameArea").removeClass("d-none")
         $(".chatRow").removeClass("d-none")
         $('.usernameRow').addClass('d-none')
+        //find a room with 0 or 1 players and set it as myRoom. We only want this to be done once so we use the .once instead of .on to create a one time event listener
         database.ref().once("value", function (snap) {
             currentData = snap.val()
             //if there are no rooms in the database
@@ -233,7 +234,6 @@ $(function () {
         }
     })
 })
-//find a room with 0 or 1 players and set it as myRoom. We only want this to be done once so we use the .once instead of .on to create a one time event listener
 
 function createButton(selection) {
     var button = $("<img>").addClass("img-thumbnail selection " + selection)
@@ -420,7 +420,7 @@ function addImage(selection, playerNo) {
     area.append(img)
 }
 function createMyMessage(text) {
-    var par = $("<p>").addClass("message card px-2 text-light bg-primary right")
+    var par = $("<p>").addClass("message card px-2 mr-3 text-light bg-primary right")
     par.text(text)
     //get position of previous message if any
     var prevTop = $(".chatArea").children().last().css("top")
@@ -438,7 +438,7 @@ function createMyMessage(text) {
     $(".chatArea").append(par)
 }
 function createOppMessage(text) {
-    var par = $("<p>").addClass("message card px-2 text-light bg-secondary left")
+    var par = $("<p>").addClass("message card px-2 ml-3 text-light bg-secondary left")
     par.text(text)
     //get position of previous message if any
     var prevTop = $(".chatArea").children().last().css("top")
