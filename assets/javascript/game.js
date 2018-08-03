@@ -186,6 +186,7 @@ $(function () {
             oppMessage.on("value",function(snap){
                 if(snap.val() == null){return}
                 createOppMessage(snap.val())
+                $(".chat")[0].scrollTop=$(".chat")[0].scrollHeight
             });
             
             //handling disconnects
@@ -215,16 +216,21 @@ $(function () {
                     }
                 })
             })
-
-
         });
     })
     $(".sendButton").on("click", function () {
         var message = $(".chatInput").val()
+        if (message == ""){return}
         createMyMessage(message)
         $(".chatInput").val("")
         var myMessageRef = database.ref(game.roomName+"/chat/player"+game.myPlayerNo)
         myMessageRef.update({'message':message})
+        $(".chat")[0].scrollTop=$(".chat")[0].scrollHeight
+    })
+    $(".chatInput").keyup(function(event){
+        if(event.keyCode==13){
+            $(".sendButton").click()
+        }
     })
 })
 //find a room with 0 or 1 players and set it as myRoom. We only want this to be done once so we use the .once instead of .on to create a one time event listener
