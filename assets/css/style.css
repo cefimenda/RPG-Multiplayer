@@ -15,3 +15,25 @@
 .container,body{
     height: 350px
 }
+.chat{
+    height: 350px;
+    width:100%;
+    overflow: scroll
+}
+.message{
+    width:fit-content;
+
+}
+.newMessage{
+    position:relative
+}
+.right{
+    position:absolute;
+    right:0px;
+    margin-left:20%;
+}
+.left{
+    position:absolute;
+    left:0px;
+    margin-right:20%;
+}

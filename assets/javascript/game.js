@@ -28,7 +28,7 @@ var game = {
     turnComplete: false,
     endingRound: false,
     waitingForPlayer: false,
-    oppNo:function(){
+    oppNo: function () {
         if (game.myPlayerNo == 1) {
             var oppNo = 2
         } else {
@@ -42,24 +42,32 @@ var initialRoomData = {
     id: 1,
     gameCount: '0',
     turnComplete: false,
+    chat:{
+        player1:{
+            message:null
+        },
+        player2:{
+            message:null
+        }
+    },
     players: {
         player1: {
             id: 1,
             score: 0,
             selection: false,
-            name:"PLAYER 1"
+            name: "PLAYER 1"
         },
         player2: {
             id: 2,
             score: 0,
             selection: false,
-            name:"PLAYER 2"
+            name: "PLAYER 2"
         }
     }
 }
 
-$(function(){
-    $(".startGame").on('click',function(){
+$(function () {
+    $(".startGame").on('click', function () {
         event.preventDefault()
         game.name = $('.username').val()
         $(".gameArea").removeClass("d-none")
@@ -129,8 +137,8 @@ $(function(){
             var player1SelectionFirebase = database.ref(game.roomName + "/players/player1/selection")
             player1SelectionFirebase.on("value", function (snap) {
                 game.player1Selection = snap.val()
-        
-                if (game.player1Selection != false && !game.waitingForPlayer) { changeInfo(game.player1Name+" made their selection, waiting for "+game.player2Name) }
+
+                if (game.player1Selection != false && !game.waitingForPlayer) { changeInfo(game.player1Name + " made their selection, waiting for " + game.player2Name) }
                 if (isSelected()) {
                     selectionComplete()
                 }
@@ -138,14 +146,14 @@ $(function(){
             var player1ScoreFirebase = database.ref(game.roomName + "/players/player1/score")
             player1ScoreFirebase.on("value", function (snap) {
                 $(".player1Score").text(snap.val())
-        
+
             })
-        
+
             //check for changes in player2 selection
             var player2SelectionFirebase = database.ref(game.roomName + "/players/player2/selection")
             player2SelectionFirebase.on("value", function (snap) {
                 game.player2Selection = snap.val()
-                if (game.player2Selection != false && !game.waitingForPlayer) { changeInfo(game.player2Name+" made their selection, waiting for "+game.player1Name) }
+                if (game.player2Selection != false && !game.waitingForPlayer) { changeInfo(game.player2Name + " made their selection, waiting for " + game.player1Name) }
                 if (isSelected()) {
                     selectionComplete()
                 }
@@ -156,20 +164,27 @@ $(function(){
             })
 
             //Naming Players
-            var player1NameFirebase = database.ref(game.roomName+"/players/player1/name")
-            player1NameFirebase.on("value",function(snap){
+            var player1NameFirebase = database.ref(game.roomName + "/players/player1/name")
+            player1NameFirebase.on("value", function (snap) {
                 game.player1Name = snap.val()
                 $(".player1Name").text(snap.val())
             })
-            var player2NameFirebase = database.ref(game.roomName+"/players/player2/name")
-            player2NameFirebase.on("value",function(snap){
+            var player2NameFirebase = database.ref(game.roomName + "/players/player2/name")
+            player2NameFirebase.on("value", function (snap) {
                 game.player2Name = snap.val()
                 $(".player2Name").text(snap.val())
             })
             var updates = {}
-            updates["/players/player"+game.myPlayerNo+"/name"]=game.name
+            updates["/players/player" + game.myPlayerNo + "/name"] = game.name
             myRoom.update(updates)
 
+            //chatRoom
+            var oppMessage = database.ref(game.roomName+"/chat/player"+game.oppNo()+"/message")
+            oppMessage.on("value",function(snap){
+                if(snap.val() == null){return}
+                createOppMessage(snap.val())
+            });
+            
             //handling disconnects
             //on every action taken we want to check if both players are still in the room and act if this isn't the case
             myRoom.on("value", function (snap) {
@@ -177,14 +192,15 @@ $(function(){
                     if (game.playerCount < 2) {
                         resetGame()
                         changeInfo('Waiting for another player to join your room...')
-                        $(".selectionImage"+game.oppNo()).remove()
+                        $(".selectionImage" + game.oppNo()).remove()
                         removeActionListener()
                         $(".buttonsRow").remove()
                         setTimeout(function () {
                             $(".buttonsRow").remove()
                         }, 600)
                         var updates = {}
-                        updates["/players/player"+game.oppNo()+"/name"]="PLAYER"+game.oppNo()
+                        updates["/players/player" + game.oppNo() + "/name"] = "PLAYER" + game.oppNo()
+                        updates["/chat/player" + game.oppNo() + "/message"] = null
                         myRoom.update(updates)
                         game.waitingForPlayer = true
                     } else if (game.playerCount >= 2 && game.waitingForPlayer) {
@@ -197,8 +213,15 @@ $(function(){
                 })
             })
 
-            
+
         });
+    })
+    $(".sendButton").on("click", function () {
+        var message = $(".chatInput").val()
+        createMyMessage(message)
+        $(".chatInput").val("")
+        var myMessageRef = database.ref(game.roomName+"/chat/player"+game.myPlayerNo)
+        myMessageRef.update({'message':message})
     })
 })
 //find a room with 0 or 1 players and set it as myRoom. We only want this to be done once so we use the .once instead of .on to create a one time event listener
@@ -289,8 +312,8 @@ function checkResult() {
     }
 }
 function displayResult() {
-    addImage(game['player'+game.myPlayerNo+'Selection'],game.myPlayerNo)
-    addImage(game['player'+game.oppNo()+'Selection'],game.oppNo())
+    addImage(game['player' + game.myPlayerNo + 'Selection'], game.myPlayerNo)
+    addImage(game['player' + game.oppNo() + 'Selection'], game.oppNo())
     if (game.winner == game.myPlayerNo) {
         changeInfo("YOU WON!")
         game["player" + game.myPlayerNo + "Score"] += 1
@@ -317,14 +340,13 @@ function updateFirebase(target) {
     }
     myRoom.update(updates)
 }
-
 function newRound() {
     console.log("____________________NEW ROUND _________________________")
     changeInfo('Make your selection!')
     game['player' + game.myPlayerNo + 'Selection'] = false
     updateFirebase('selection')
-    addImage('ROCK',game.myPlayerNo)
-    addImage('ROCK',game.oppNo())
+    addImage('ROCK', game.myPlayerNo)
+    addImage('ROCK', game.oppNo())
 }
 function isSelected() {
     return (game.player1Selection != false && game.player2Selection != false)
@@ -336,7 +358,7 @@ function selectionComplete() {
 
     checkResult()
     //display results
-    setTimeout(function(){
+    setTimeout(function () {
         displayResult()
         updateFirebase('score')
         if (game.myPlayerNo == 1) { //we don't want multiple browsers updating the same info - otherwise our event listener attached to gameRound on firebase will fire multiple times
@@ -347,26 +369,26 @@ function selectionComplete() {
         }
         clearInterval(randInterv)
         $(".middleText").text('VS')
-    },3000)
-    var randInterv = setInterval(function(){
+    }, 3000)
+    var randInterv = setInterval(function () {
         var mid = $(".middleText")
         var text = mid.text()
-        if (text == 'VS'){
+        if (text == 'VS') {
             mid.text('3')
-            text='3'
-        }else{
-            mid.text(Number(text)-1)
+            text = '3'
+        } else {
+            mid.text(Number(text) - 1)
         }
-        if (mid.text()=='0'){
+        if (mid.text() == '0') {
             mid.text('VS')
         }
-    },800)
+    }, 800)
 
 }
 function addImage(selection, playerNo) {
-    $(".selectionImage"+playerNo).remove()
+    $(".selectionImage" + playerNo).remove()
     var area = $(".player" + playerNo + "Area")
-    var img = $("<img>").addClass("mx-auto my-2 selectionImage"+playerNo)
+    var img = $("<img>").addClass("mx-auto my-2 selectionImage" + playerNo)
     img.css({
         height: '200px',
         width: '200px'
@@ -380,4 +402,38 @@ function addImage(selection, playerNo) {
         img.addClass('flipped')
     }
     area.append(img)
+}
+function createMyMessage(text) {
+    var par = $("<p>").addClass("message card px-2 text-light bg-primary right")
+    par.text(text)
+    //get position of previous message if any
+    var prevTop = $(".chatArea").children().last().css("top")
+    //add 30 to the previous position for the new messages position
+    if (prevTop == undefined) {
+        par.css({
+            'top': "20px"
+        })
+    } else {
+        par.css({
+            'top': (Number(prevTop.split("px")[0]) + Number(30)) + "px"
+        })
+    }
+    $(".chatArea").append(par)
+}
+function createOppMessage(text) {
+    var par = $("<p>").addClass("message card px-2 text-light bg-secondary left")
+    par.text(text)
+    //get position of previous message if any
+    var prevTop = $(".chatArea").children().last().css("top")
+    //add 30 to the previous position for the new messages position
+    if (prevTop == undefined) {
+        par.css({
+            'top': "20px"
+        })
+    } else {
+        par.css({
+            'top': (Number(prevTop.split("px")[0]) + Number(30)) + "px"
+        })
+    }
+    $(".chatArea").append(par)
 }
